@@ -6,6 +6,16 @@
     <title>Customer</title>
 </head>
 <body>
-    <h1>Trang của kháchkhách</h1>
+    <h1>Trang của khách</h1>
+    <div>
+        <button id="btn_logout">
+            Đăng xuất
+        </button>
+    </div>
 </body>
+<script>
+        document.getElementById("btn_logout").onclick = function () {
+        window.location.href = "/logout";
+    }
+</script>
 </html>

@@ -13,9 +13,9 @@
             <form>
                 <input type="text" placeholder="Tên Đăng Nhập" required>
                 <input type="password" placeholder="Mật Khẩu" required>
-                <button type="submit">ĐĂNG NHẬP</button>
+                <button id="btn_login" type="submit">ĐĂNG NHẬP</button>
                 <div style="padding-top: 10px;padding-bottom: 10px;">hoặc</div>
-                <button type="button">
+                <button id="btn_log_gg" type="button">
                         <img src="/static/images/gg.png" alt="Google logo" width="20" height="20" style="vertical-align: middle; margin-right: 8px;">
 
                     Đăng nhập bằng tài khoản Google</button>
@@ -24,4 +24,9 @@
         </div>
     </div>
 </body>
+<script>
+    document.getElementById("btn_log_gg").onclick = function () {
+        window.location.href = "/login_gg";
+    }
+</script>
 </html>
