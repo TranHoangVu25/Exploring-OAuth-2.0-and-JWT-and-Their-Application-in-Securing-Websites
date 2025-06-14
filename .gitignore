@@ -194,3 +194,4 @@ cython_debug/
 .cursorindexingignore
 .env
 static/images/
+token.json

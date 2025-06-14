@@ -4,10 +4,8 @@ import os
 import jwt
 import datetime
 from dotenv import load_dotenv
-import json
 
 load_dotenv()  
-
 app = Flask(__name__)
 JWT_SECRET = os.getenv('JWT_SECRET', os.urandom(24))
 JWT_ALGORITHM = 'HS256'
@@ -96,9 +94,7 @@ def callback():
         'picture': userinfo.get('picture', '')
     }
     jwt_token = generate_jwt(payload)
-    with open("token.json", "w") as f:
-        json.dump({"access_token": jwt_token}, f)
-    # Trả cookie cho client
+
     response = make_response(redirect(url_for('home')))
     response.set_cookie(
         'access_token',
