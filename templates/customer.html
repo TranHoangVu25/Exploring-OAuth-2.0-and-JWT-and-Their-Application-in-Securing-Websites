@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -18,4 +18,210 @@
         window.location.href = "/logout";
     }
 </script>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .token-info {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        #api-result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            min-height: 100px;
+        }
+        .error {
+            color: #d93025;
+            margin-top: 10px;
+        }
+        .success {
+            color: #0f9d58;
+        }
+        .status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        .status-authenticated {
+            background-color: #e6f4ea;
+            color: #0f9d58;
+        }
+        .status-not-authenticated {
+            background-color: #fce8e6;
+            color: #d93025;
+        }
+    </style>
+</head>
+<body>
+    <h1>Demo Refresh Token</h1>
+    
+    <div class="token-info">
+        <h3>Authentication Status</h3>
+        <p>Status: <span id="token-status" class="status">Checking...</span></p>
+    </div>
+
+    <div class="actions">
+        <button id="btn-fetch-data">Call Protected API</button>
+        <button id="btn-refresh">Manual Refresh Token</button>
+        <button id="btn-logout">Logout</button>
+    </div>
+
+    <div id="api-result"></div>
+    <div id="refresh-result"></div>
+    <div id="error-message" class="error"></div>
+
+    <script>
+        // Biến toàn cục
+        let tokenCheckInterval;
+
+        // Cập nhật UI dựa trên thông tin token
+        function updateTokenUI(info) {
+            const tokenStatus = document.getElementById('token-status');
+            
+            if (info.status === 'authenticated') {
+                tokenStatus.textContent = 'Authenticated';
+                tokenStatus.className = 'status status-authenticated';
+            } else {
+                tokenStatus.textContent = 'Not Authenticated';
+                tokenStatus.className = 'status status-not-authenticated';
+            }
+        }
+
+        // Lấy thông tin token từ server
+        async function fetchTokenInfo() {
+            try {
+                const response = await fetch('/api/token-info', {
+                    credentials: 'include'
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching token info:', error);
+                return { status: 'error' };
+            }
+        }
+
+        // Hàm gọi API được bảo vệ
+        async function fetchProtectedData() {
+            const resultDiv = document.getElementById('api-result');
+            const errorDiv = document.getElementById('error-message');
+            
+            resultDiv.textContent = 'Calling protected API...';
+            errorDiv.textContent = '';
+            
+            try {
+                const response = await fetch('/api/protected', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h3>API Response</h3>
+                        <p>Message: ${data.message}</p>
+                        <p>User: ${data.user.email}</p>
+                    `;
+                } else if (response.status === 401) {
+                    // Token hết hạn, thử refresh
+                    const refreshSuccess = await refreshToken();
+                    if (refreshSuccess) {
+                        // Thử lại request sau khi refresh thành công
+                        fetchProtectedData();
+                    } else {
+                        errorDiv.textContent = 'Session expired. Please login again.';
+                        resultDiv.textContent = '';
+                    }
+                } else {
+                    errorDiv.textContent = `Error: ${response.status}`;
+                    resultDiv.textContent = '';
+                }
+            } catch (error) {
+                errorDiv.textContent = `Connection error: ${error.message}`;
+                resultDiv.textContent = '';
+            }
+        }
+
+        // Hàm refresh token
+        async function refreshToken() {
+            const refreshDiv = document.getElementById('refresh-result');
+            refreshDiv.textContent = 'Refreshing token...';
+            refreshDiv.className = '';
+            
+            try {
+                const response = await fetch('/refresh', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    refreshDiv.innerHTML = `<div class="success">✓ Token refreshed successfully!</div>`;
+                    return true;
+                } else {
+                    refreshDiv.innerHTML = `<div class="error">✗ Refresh failed: ${response.status}</div>`;
+                    return false;
+                }
+            } catch (error) {
+                refreshDiv.innerHTML = `<div class="error">✗ Refresh error: ${error.message}</div>`;
+                return false;
+            }
+        }
+
+        // Cập nhật thông tin token định kỳ
+        async function updateTokenInfo() {
+            const tokenInfo = await fetchTokenInfo();
+            updateTokenUI(tokenInfo);
+        }
+
+        // Xử lý sự kiện khi trang tải
+        document.addEventListener('DOMContentLoaded', () => {
+            // Cập nhật thông tin token mỗi giây
+            tokenCheckInterval = setInterval(updateTokenInfo, 1000);
+            updateTokenInfo(); // Cập nhật ngay lần đầu
+            
+            // Nút gọi API bảo mật
+            document.getElementById('btn-fetch-data').addEventListener('click', fetchProtectedData);
+            
+            // Nút refresh token thủ công
+            document.getElementById('btn-refresh').addEventListener('click', refreshToken);
+            
+            // Nút đăng xuất
+            document.getElementById('btn-logout').addEventListener('click', () => {
+                clearInterval(tokenCheckInterval);
+                window.location.href = '/logout';
+            });
+        });
+    </script>
+</body>
 </html>
